@@ -5,10 +5,10 @@ var fs = require('fs');
 
 var children = [];
 fs.readdir('/var/node', function(err, files) {
-  if (err) return console.log(err);
+  if (err) throw err;
   files.forEach(function(file) {
     fs.stat('/var/node/'+file, function(err, stats) {
-      if (err) return console.log(err);
+      if (err) throw err;
       if (stats.isDirectory()) {
         children.push(forever.start('/var/node/'+file+'/server.js', {
           watch: true,
