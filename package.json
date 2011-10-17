@@ -1,0 +1,14 @@
+{ "name": "overnode"
+, "description": "A script to start and watch over several Node processes"
+, "version": "0.0.1"
+, "author": "Gabriel Farrell <g@grrawr.com>"
+, "bin": "./bin/overnode"
+, "engines": { "node": ">=0.4.0" }
+, "repository":
+  { "type": "git"
+  , "url": "http://github.com/gsf/overnode.git"
+  }
+, "dependencies":
+  { "forever": ">=0.7.1"
+  }
+}
