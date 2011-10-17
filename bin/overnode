@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+
+var forever = require('forever');
+var fs = require('fs');
+
+var children = [];
+fs.readdir('/var/node', function(err, files) {
+  if (err) return console.log(err);
+  files.forEach(function(file) {
+    fs.stat('/var/node/'+file, function(err, stats) {
+      if (err) return console.log(err);
+      if (stats.isDirectory()) {
+        children.push(forever.start('/var/node/'+file+'/server.js', {
+          watch: true,
+          watchDirectory: '/var/node/'+file
+        }));
+      }
+    });
+  });
+});
+
+process.on('SIGTERM', function() {
+  children.forEach(function(child) {
+    child.stop();
+  });
+});
