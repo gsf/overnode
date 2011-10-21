@@ -4,9 +4,21 @@ var fs = require('fs');
 var http = require('http');
 var path = require('path');
 var url = require('url');
+var util = require('util');
 
 var port = process.argv[2] || 9001;
 var appDir = '/var/node/';
+
+// Let daemon command redirect to log for now
+//var log = '/var/log/overnode';
+//// See if we can write to /var/log/overnode
+//try {
+//  fs.openSync(log, 'a');
+//} catch (e) {
+//  log = 'overnode.log';
+//}
+//// Reassign stdout and stderr to log file
+//process.stdout = process.stderr = fs.createWriteStream('/var/log/overnode', {flags: 'a'});
 
 var files = fs.readdirSync(appDir), apps = {};
 for (var i=0, l=files.length; i<l; i++) {
@@ -19,6 +31,7 @@ for (var i=0, l=files.length; i<l; i++) {
 http.createServer(function(req, res) {
   var app = apps[req.headers.host];
   if (app) {
+    util.log(req.method+' http://'+req.headers.host+req.url);
     app.respond(req, res);
   } else { // no hostname match
     res.writeHead(404, {'Content-Type': 'text/html'});
@@ -26,4 +39,4 @@ http.createServer(function(req, res) {
   }
 }).listen(port);
 
-console.log('Running on port '+port);
+util.log('Overnode running on port '+port);
