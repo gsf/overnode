@@ -1,0 +1,52 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          overnode
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts overnode services
+# Description:       starts overnode using start-stop-daemon
+### END INIT INFO
+
+# adapted from nginx init 2011-10-17 gsf
+# also borrowed a few ideas from https://gist.github.com/715255
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+#FOREVER=/usr/local/bin/forever
+DAEMON=overnode
+DESC="node server"
+NAME=overnode
+OUTLOG=/var/log/node/access
+ERRLOG=/var/log/node/error
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+    #/usr/local/bin/forever start -l /var/log/forever -o $OUTLOG -e $ERRLOG -a $DAEMON
+    daemon -n $NAME -O $OUTLOG -E $ERRLOG -- $DAEMON
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+    #$FOREVER stop $DAEMON
+    daemon -n $NAME --stop
+	echo "$NAME."
+	;;
+  restart)
+    $0 stop
+	sleep 1
+    $0 start
+	;;
+  *)
+	echo "Usage: $NAME {start|stop|restart}" >&2
+	exit 1
+	;;
+esac
+
+exit 0
