@@ -15,7 +15,7 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 #FOREVER=/usr/local/bin/forever
-DAEMON=overnode
+DAEMON=/usr/local/bin/overnode
 DESC="node server"
 NAME=overnode
 OUTLOG=/var/log/node/access
