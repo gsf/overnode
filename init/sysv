@@ -14,12 +14,10 @@
 # also borrowed a few ideas from https://gist.github.com/715255
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-#FOREVER=/usr/local/bin/forever
 DAEMON=/usr/local/bin/overnode
 DESC="node server"
 NAME=overnode
-OUTLOG=/var/log/node/access
-ERRLOG=/var/log/node/error
+USER=node
 
 test -x $DAEMON || exit 0
 
@@ -28,14 +26,12 @@ test -x $DAEMON || exit 0
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
-    #/usr/local/bin/forever start -l /var/log/forever -o $OUTLOG -e $ERRLOG -a $DAEMON
-    daemon -n $NAME -O $OUTLOG -E $ERRLOG -- $DAEMON
+    daemon -u $USER -n $NAME -- $DAEMON
 	echo "$NAME."
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-    #$FOREVER stop $DAEMON
-    daemon -n $NAME --stop
+    daemon -u $USER -n $NAME --stop
 	echo "$NAME."
 	;;
   restart)

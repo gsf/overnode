@@ -1,42 +1,36 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
-var http = require('http');
 var path = require('path');
-var url = require('url');
+var spawn = require('child_process').spawn;
 var util = require('util');
 
-var port = process.argv[2] || 9001;
-var appDir = '/var/node/';
+var root = '/var/node/';
+var logRoot = '/var/log/node/';
 
-// Let daemon command redirect to log for now
-//var log = '/var/log/overnode';
-//// See if we can write to /var/log/overnode
-//try {
-//  fs.openSync(log, 'a');
-//} catch (e) {
-//  log = 'overnode.log';
-//}
-//// Reassign stdout and stderr to log file
-//process.stdout = process.stderr = fs.createWriteStream('/var/log/overnode', {flags: 'a'});
+var dirs = fs.readdirSync(root);
+var children = [];
+dirs.forEach(function(dir) {
+  var scriptPath = root+dir+'/server.js';
+  console.log('Running script at '+scriptPath);
+  var child = spawn('node', [scriptPath]);
+  child.stdout.on('data', function(data) {
+    fs.writeFile(logRoot+dir+'.access.log', data, function(err) {
+      if (err) throw err;
+    });
+  });
+  child.stderr.on('data', function(data) {
+    fs.writeFile(logRoot+'error.log', data, function(err) {
+      if (err) throw err;
+    });
+  });
+  children.push(child)
+});
 
-var files = fs.readdirSync(appDir), apps = {};
-for (var i=0, l=files.length; i<l; i++) {
-  // only include directories containing "app.js"
-  if (path.existsSync(appDir+files[i]+'/app.js')) {
-    apps[files[i]] = require(appDir+files[i]+'/app');
-  }
-}
+util.log('Overnode running '+children.length+' processes');
 
-http.createServer(function(req, res) {
-  var app = apps[req.headers.host];
-  if (app) {
-    util.log(req.method+' http://'+req.headers.host+req.url);
-    app.respond(req, res);
-  } else { // no hostname match
-    res.writeHead(404, {'Content-Type': 'text/html'});
-    res.end('<h1>404 Not Found</h1>');
-  }
-}).listen(port);
-
-util.log('Overnode running on port '+port);
+process.on('exit', function() {
+  children.forEach(function(child) {
+    child.kill();
+  });
+});
