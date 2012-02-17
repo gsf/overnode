@@ -18,6 +18,8 @@ DAEMON=/usr/local/bin/overnode
 DESC="node server"
 NAME=overnode
 USER=node
+OUTLOG=/var/log/node/overnode.log
+ERRLOG=/var/log/node/overnode.log
 
 test -x $DAEMON || exit 0
 
@@ -26,7 +28,7 @@ test -x $DAEMON || exit 0
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
-    daemon -u $USER -n $NAME -- $DAEMON
+    daemon -u $USER -n $NAME -O $OUTLOG -E $ERRLOG -- $DAEMON
 	echo "$NAME."
 	;;
   stop)
