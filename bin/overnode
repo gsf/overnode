@@ -1,4 +1,22 @@
 #!/usr/bin/env node
+// Overnode executable, for starting and watching over processes
+// 
+// Optional config file should look something like this:
+//
+// {
+//   "scripts": [
+//     {
+//       "script": "/path/to/script.js",
+//       "args": [
+//         "args",
+//         "for",
+//         "script"
+//       ],
+//       "watch": "/path/to/watch/dir/or/file.js"
+//     }
+//   ]
+// }
+//
 
 var fs = require('fs');
 var path = require('path');
@@ -9,10 +27,27 @@ var root = '/var/node/';
 var logRoot = '/var/log/node/';
 
 var dirs = fs.readdirSync(root);
-var children = [];
+var children = {};
 dirs.forEach(function(dir) {
+  spawnChild(dir);
+});
+
+util.log('Overnode started '+Object.keys(children).length+' processes');
+//util.log(util.inspect(children));
+
+// Kill children on stop
+process.on('SIGTERM', function() {
+  var child;
+  for (var key in children) {
+    child = children[key];
+    child.kill();
+    //util.log(util.inspect(child));
+  }
+});
+
+function spawnChild(dir) {
   var scriptPath = root+dir+'/server.js';
-  console.log('Running script at '+scriptPath);
+  util.log('Started script at '+scriptPath);
   var child = spawn('node', [scriptPath]);
   child.stdout.on('data', function(data) {
     fs.writeFile(logRoot+dir+'.access.log', data, function(err) {
@@ -24,13 +59,12 @@ dirs.forEach(function(dir) {
       if (err) throw err;
     });
   });
-  children.push(child)
-});
-
-util.log('Overnode running '+children.length+' processes');
-
-process.on('exit', function() {
-  children.forEach(function(child) {
-    child.kill();
+  // Restart on exit
+  child.on('exit', function() {
+    if (!child.killed) {
+      delete children[dir];
+      spawnChild(dir);
+    }
   });
-});
+  children[dir] = child;
+}
