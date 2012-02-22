@@ -27,6 +27,8 @@ var root = '/var/node/';
 var logRoot = '/var/log/node/';
 
 var dirs = fs.readdirSync(root);
+// TODO "scripts" should be the container object
+// with WriteStreams for each script to access and error logs
 var children = {};
 dirs.forEach(function(dir) {
   var scriptPath = root+dir+'/server.js';
