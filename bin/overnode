@@ -12,7 +12,7 @@
 //         "for",
 //         "script"
 //       ],
-//       "watch": "/path/to/watch/dir/or/file.js"
+//       "watch": true
 //     }
 //   ]
 // }
@@ -29,6 +29,11 @@ var logRoot = '/var/log/node/';
 var dirs = fs.readdirSync(root);
 var children = {};
 dirs.forEach(function(dir) {
+  var scriptPath = root+dir+'/server.js';
+  fs.watch(scriptPath, function(event) {
+    util.log('Killing '+dir+' due to '+event+'...');
+    children[dir].kill();
+  });
   spawnChild(dir);
 });
 
@@ -40,15 +45,20 @@ process.on('SIGTERM', function() {
   var child;
   for (var key in children) {
     child = children[key];
+    child.forceStop = true;
     child.kill();
     //util.log(util.inspect(child));
   }
+  // XXX will this help with hanging process?
+  process.exit();
 });
 
 function spawnChild(dir) {
   var scriptPath = root+dir+'/server.js';
-  util.log('Started script at '+scriptPath);
   var child = spawn('node', [scriptPath]);
+  util.log('Started script at '+scriptPath);
+  children[dir] = child;
+  child.ctime = Date.now();
   child.stdout.on('data', function(data) {
     fs.writeFile(logRoot+dir+'.access.log', data, function(err) {
       if (err) throw err;
@@ -59,12 +69,12 @@ function spawnChild(dir) {
       if (err) throw err;
     });
   });
-  // Restart on exit
+  // Restart on exit if not forceStop
   child.on('exit', function() {
-    if (!child.killed) {
-      delete children[dir];
+    if (!child.forceStop) {
+      children[dir] = null;
+      //setTimeout(spawnChild(dir), 5000);
       spawnChild(dir);
     }
   });
-  children[dir] = child;
 }
