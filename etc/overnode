@@ -1,0 +1,17 @@
+{
+  "childName": {
+    "command": "/path/to/command",
+    "args": [
+      "args",
+      "for",
+      "command"
+    ],
+    "stdout": "/path/to/stdout.log",
+    "stderr": "/path/to/stderr.log",
+    "watch": "/path/to/watch/file/or/dir"
+  },
+  "secondChildName": {
+    "command": "/path/to/command",
+    "args": ["arg"]
+  }
+}

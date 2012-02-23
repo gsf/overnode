@@ -1,82 +1,68 @@
 #!/usr/bin/env node
 // Overnode executable, for starting and watching over processes
 // 
-// Optional config file should look something like this:
-//
-// {
-//   "scripts": [
-//     {
-//       "script": "/path/to/script.js",
-//       "args": [
-//         "args",
-//         "for",
-//         "script"
-//       ],
-//       "watch": true
-//     }
-//   ]
-// }
-//
+// See etc/overnode for example config file
 
 var fs = require('fs');
-var path = require('path');
 var spawn = require('child_process').spawn;
 var util = require('util');
 
-var root = '/var/node/';
-var logRoot = '/var/log/node/';
+var configFile = process.argv[2] || '/usr/local/etc/overnode';
+var children = JSON.parse(fs.readFileSync(configFile));
+//console.log(util.inspect(children));
 
-var dirs = fs.readdirSync(root);
-// TODO "scripts" should be the container object
-// with WriteStreams for each script to access and error logs
-var children = {};
-dirs.forEach(function(dir) {
-  var scriptPath = root+dir+'/server.js';
-  fs.watch(scriptPath, function(event) {
-    util.log('Killing '+dir+' due to '+event+'...');
-    children[dir].kill();
-  });
-  spawnChild(dir);
+var names = Object.keys(children);
+names.forEach(function(name) {
+  var child = children[name];
+  if (child.watch) {
+    fs.watch(child.watch, function(event) {
+      util.log('Killing '+name+' due to '+event+'...');
+      child.instance.kill();
+    });
+  }
+  if (child.stdout) 
+    child.stdoutStream = fs.createWriteStream(child.stdout, {flags: 'a'});
+  if (child.stderr) 
+    child.stderrStream = fs.createWriteStream(child.stderr, {flags: 'a'});
+  spawnInstance(child);
 });
 
-util.log('Overnode started '+Object.keys(children).length+' processes');
-//util.log(util.inspect(children));
+util.log('Overnode started '+names.length+' processes');
 
 // Kill children on stop
 process.on('SIGTERM', function() {
-  var child;
-  for (var key in children) {
-    child = children[key];
-    child.forceStop = true;
-    child.kill();
-    //util.log(util.inspect(child));
-  }
+  names.forEach(function(name) {
+    var child = children[name];
+    child.instance.forceStop = true;
+    child.instance.kill();
+    if (child.stdoutStream) child.stdoutStream.end();
+    if (child.stderrStream) child.stderrStream.end();
+  });
   // XXX will this help with hanging process?
   process.exit();
 });
 
-function spawnChild(dir) {
-  var scriptPath = root+dir+'/server.js';
-  var child = spawn('node', [scriptPath]);
-  util.log('Started script at '+scriptPath);
-  children[dir] = child;
-  child.ctime = Date.now();
-  child.stdout.on('data', function(data) {
-    fs.writeFile(logRoot+dir+'.access.log', data, function(err) {
-      if (err) throw err;
+function spawnInstance(child) {
+  var args = child.args || [];
+  child.instance = spawn(child.command, args);
+  util.log('Started child at '+child.command+' '+args.join(' '));
+  child.instance.ctime = Date.now();
+  if (child.stdoutStream) {
+    child.instance.stdout.on('data', function(data) {
+      child.stdoutStream.write(data);
     });
-  });
-  child.stderr.on('data', function(data) {
-    fs.writeFile(logRoot+'error.log', data, function(err) {
-      if (err) throw err;
+  }
+  if (child.stderrStream) {
+    child.instance.stderr.on('data', function(data) {
+      child.stderrStream.write(data);
     });
-  });
+  }
   // Restart on exit if not forceStop
-  child.on('exit', function() {
-    if (!child.forceStop) {
-      children[dir] = null;
-      //setTimeout(spawnChild(dir), 5000);
-      spawnChild(dir);
+  child.instance.on('exit', function() {
+    if (!child.instance.forceStop) {
+      child.instance = null;
+      spawnInstance(child);
+      //setTimeout(spawnInstance(child), 5000);
     }
   });
 }
