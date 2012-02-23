@@ -8,7 +8,4 @@
   { "type": "git"
   , "url": "http://github.com/gsf/overnode.git"
   }
-, "dependencies":
-  { "forever": ">=0.7.1"
-  }
 }
