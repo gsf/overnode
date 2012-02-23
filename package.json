@@ -3,7 +3,7 @@
 , "version": "0.0.1"
 , "author": "Gabriel Farrell <g@grrawr.com>"
 , "bin": "./bin/overnode"
-, "engines": { "node": ">=0.4.0" }
+, "engines": { "node": ">=0.6.0" }
 , "repository":
   { "type": "git"
   , "url": "http://github.com/gsf/overnode.git"
