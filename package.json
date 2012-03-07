@@ -1,6 +1,6 @@
 { "name": "overnode"
 , "description": "A script to start and watch over several Node processes"
-, "version": "0.0.1"
+, "version": "0.0.2"
 , "author": "Gabriel Farrell <g@grrawr.com>"
 , "bin": "./bin/overnode"
 , "engines": { "node": ">=0.6.0" }
