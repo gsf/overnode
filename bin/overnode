@@ -14,12 +14,6 @@ var children = JSON.parse(fs.readFileSync(configFile));
 var names = Object.keys(children);
 names.forEach(function(name) {
   var child = children[name];
-  if (child.watch) {
-    fs.watch(child.watch, function(event) {
-      util.log('Killing '+name+' due to '+event+'...');
-      child.instance.kill();
-    });
-  }
   if (child.stdout) 
     child.stdoutStream = fs.createWriteStream(child.stdout, {flags: 'a'});
   if (child.stderr) 
@@ -44,9 +38,16 @@ process.on('SIGTERM', function() {
 
 function spawnInstance(child) {
   var args = child.args || [];
+  var fullCommand = child.command+' '+args.join(' ');
   child.instance = spawn(child.command, args);
-  util.log('Started child at '+child.command+' '+args.join(' '));
+  util.log('Started child: '+fullCommand);
   child.instance.ctime = Date.now();
+  if (child.watch) {
+    fs.watch(child.watch, function(event) {
+      util.log('Killing child due to file change: '+child.watch);
+      child.instance.kill();
+    });
+  }
   if (child.stdoutStream) {
     child.instance.stdout.on('data', function(data) {
       child.stdoutStream.write(data);
@@ -60,7 +61,6 @@ function spawnInstance(child) {
   // Restart on exit if not forceStop
   child.instance.on('exit', function() {
     if (!child.instance.forceStop) {
-      child.instance = null;
       spawnInstance(child);
       //setTimeout(spawnInstance(child), 5000);
     }
