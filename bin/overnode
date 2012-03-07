@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Overnode executable, for starting and watching over processes
+// Overnode executable, for spawning and watching over processes
 // 
 // See etc/overnode for example config file
 
@@ -21,7 +21,7 @@ names.forEach(function(name) {
   spawnInstance(child);
 });
 
-util.log('Overnode started '+names.length+' processes');
+util.log('Overnode spawned '+names.length+' processes');
 
 // Kill children on stop
 process.on('SIGTERM', function() {
@@ -39,12 +39,12 @@ process.on('SIGTERM', function() {
 function spawnInstance(child) {
   var args = child.args || [];
   var fullCommand = child.command+' '+args.join(' ');
+  util.log('Spawning child: '+fullCommand);
   child.instance = spawn(child.command, args);
-  util.log('Started child: '+fullCommand);
   child.instance.ctime = Date.now();
   if (child.watch) {
     fs.watch(child.watch, function(event) {
-      util.log('Killing child due to file change: '+child.watch);
+      util.log('File changed: '+child.watch);
       child.instance.kill();
     });
   }
@@ -58,11 +58,11 @@ function spawnInstance(child) {
       child.stderrStream.write(data);
     });
   }
-  // Restart on exit if not forceStop
+  // Respawn on exit if not forceStop
   child.instance.on('exit', function() {
-    if (!child.instance.forceStop) {
+    util.log('Child killed: '+fullCommand);
+    if (!child.instance.forceStop && Date.now() - child.instance.ctime > 1000) {
       spawnInstance(child);
-      //setTimeout(spawnInstance(child), 5000);
     }
   });
 }
