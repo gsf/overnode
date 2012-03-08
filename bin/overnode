@@ -14,6 +14,7 @@ var children = JSON.parse(fs.readFileSync(configFile));
 var names = Object.keys(children);
 names.forEach(function(name) {
   var child = children[name];
+  child.name = name;
   if (child.stdout) 
     child.stdoutStream = fs.createWriteStream(child.stdout, {flags: 'a'});
   if (child.stderr) 
@@ -27,8 +28,7 @@ util.log('Overnode spawned '+names.length+' processes');
 process.on('SIGTERM', function() {
   names.forEach(function(name) {
     var child = children[name];
-    child.instance.forceStop = true;
-    child.instance.kill();
+    killInstance(child);
     if (child.stdoutStream) child.stdoutStream.end();
     if (child.stderrStream) child.stderrStream.end();
   });
@@ -37,15 +37,14 @@ process.on('SIGTERM', function() {
 });
 
 function spawnInstance(child) {
+  util.log('Spawning child: '+child.name);
   var args = child.args || [];
-  var fullCommand = child.command+' '+args.join(' ');
-  util.log('Spawning child: '+fullCommand);
   child.instance = spawn(child.command, args);
   child.instance.ctime = Date.now();
   if (child.watch) {
     fs.watch(child.watch, function(event) {
       util.log('File changed: '+child.watch);
-      child.instance.kill();
+      reSpawnInstance(child);
     });
   }
   if (child.stdoutStream) {
@@ -58,11 +57,17 @@ function spawnInstance(child) {
       child.stderrStream.write(data);
     });
   }
-  // Respawn on exit if not forceStop
-  child.instance.on('exit', function() {
-    util.log('Child killed: '+fullCommand);
-    if (!child.instance.forceStop && Date.now() - child.instance.ctime > 1000) {
-      spawnInstance(child);
-    }
-  });
+}
+
+function killInstance(child) {
+  util.log('Killing child: '+child.name);
+  child.instance.kill();
+}
+
+function reSpawnInstance(child) {
+  // don't act if the child has lived for less than a second
+  if (Date.now() - child.instance.ctime > 1000) {
+    killInstance(child);
+    spawnInstance(child);
+  }
 }
