@@ -7,7 +7,7 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 var util = require('util');
 
-var configFile = process.argv[2] || '/usr/local/etc/overnode';
+var configFile = process.argv[2] || 'etc/overnode';
 var children = JSON.parse(fs.readFileSync(configFile));
 //console.log(util.inspect(children));
 
