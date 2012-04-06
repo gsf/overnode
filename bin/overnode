@@ -54,16 +54,14 @@ function spawnInstance(child) {
       reSpawnInstance(child);
     });
   }
-  if (child.stdoutStream) {
-    child.instance.stdout.on('data', function(data) {
-      child.stdoutStream.write(data);
-    });
-  }
-  if (child.stderrStream) {
-    child.instance.stderr.on('data', function(data) {
-      child.stderrStream.write(data);
-    });
-  }
+  child.instance.stdout.on('data', function(data) {
+    if (child.stdoutStream) child.stdoutStream.write(data);
+    else process.stdout.write(data);
+  });
+  child.instance.stderr.on('data', function(data) {
+    if (child.stderrStream) child.stderrStream.write(data);
+    else process.stderr.write(data);
+  });
 }
 
 function killInstance(child) {
