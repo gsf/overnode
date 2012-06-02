@@ -1,6 +1,6 @@
 { "name": "overnode"
 , "description": "A node.js process manager"
-, "version": "0.0.2"
+, "version": "0.0.3"
 , "author": "Gabriel Farrell <g@grrawr.com>"
 , "bin": "./bin/overnode"
 , "engines": { "node": ">=0.6.0" }
