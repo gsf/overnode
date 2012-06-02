@@ -1,5 +1,5 @@
 { "name": "overnode"
-, "description": "A script to start and watch over several Node processes"
+, "description": "A node.js process manager"
 , "version": "0.0.2"
 , "author": "Gabriel Farrell <g@grrawr.com>"
 , "bin": "./bin/overnode"
