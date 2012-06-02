@@ -8,8 +8,22 @@ var spawn = require('child_process').spawn;
 var util = require('util');
 
 var configFile = process.argv[2] || 'etc/overnode';
-var children = JSON.parse(fs.readFileSync(configFile));
-//console.log(util.inspect(children));
+
+var children;
+try {
+  children = JSON.parse(fs.readFileSync(configFile));
+} catch (e) {
+  if (e.type == 'unexpected_token') {
+    children = {};
+    children[configFile] = {
+      command: 'node ./' + configFile,
+      watch: './'
+    }
+    if (process.argv.length > 3)
+      children[configFile].args = process.argv.slice(2, process.argv.length)
+  }
+}
+//console.log(children);
 
 var names = Object.keys(children);
 names.forEach(function(name) {
